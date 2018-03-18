@@ -105,7 +105,7 @@ void binariza(Imagem *in, Imagem *out, float threshold)
     for (j = 0; j < in->altura; j++)
         for (k = 0; k < in->largura; k++)
             if (in->dados[0][j][k] >= THRESHOLD)
-                in->dados[0][j][k] = 1.0f;
+                in->dados[0][j][k] = -1.0f;
             else
                 in->dados[0][j][k] = 0.0f;
 }
@@ -130,13 +130,20 @@ void binariza(Imagem *in, Imagem *out, float threshold)
 int floodfill(Imagem *img, int j, int k, Componente *componente)
 {
 
-    printf("teste pixels: %d \n", componente->n_pixels);
-    if (img->dados[0][j][k] != 1.0f)
+    if (img->dados[0][j][k] != -1.0f)
         return 0;
     else
     {
         img->dados[0][j][k] = componente->label;
         componente->n_pixels++;
+        if (k < componente->roi.e) //direita
+            componente->roi.e = k;
+        if (k > componente->roi.d) //esquerda
+            componente->roi.d = k;
+        if (j < componente->roi.c) //cima
+            componente->roi.c = j;
+        if (j > componente->roi.b) //baixo
+            componente->roi.b = j;
         floodfill(img, j, k + 1, componente); // direita
         floodfill(img, j, k - 1, componente); // esquerda
         floodfill(img, j + 1, k, componente); // baixo
@@ -156,24 +163,37 @@ int rotula(Imagem *img, Componente **componentes, int largura_min, int altura_mi
     int j, k, c = 0;
     float label = 0.1f;
 
-    if (!componentes)
-        *componentes = malloc(sizeof(Componente) * 100);
+    *componentes = malloc(sizeof(Componente) * 100);
 
     for (j = 0; j < img->altura; j++)
     {
         for (k = 0; k < img->largura; k++)
-            if (img->dados[0][j][k] == 1.0f)
+        {
+            if (img->dados[0][j][k] == -1.0f)
             {
                 (*componentes)[c].label = label;
                 (*componentes)[c].n_pixels = 0;
+                (*componentes)[c].roi.c = 999999;
+                (*componentes)[c].roi.b = 0;
+                (*componentes)[c].roi.e = 999999;
+                (*componentes)[c].roi.d = 0;
                 floodfill(img, j, k, &((*componentes)[c]));
-                c++;
-                label += 0.1f;
-                /*if(c>=100){
-                        *componentes = realloc(*componentes, c);
-                    }*/
+                if ((*componentes)[c].n_pixels < N_PIXELS_MIN)
+                {
+                    (*componentes)[c].label = label;
+                    (*componentes)[c].n_pixels = 0;
+                }
+                else
+                {
+                    c++;
+                    label += 0.1f;
+                }
             }
+        }
     }
+
+    *componentes = realloc(*componentes, sizeof(Componente) * c);
+
     return (c);
 }
 
