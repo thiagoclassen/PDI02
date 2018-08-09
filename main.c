@@ -144,10 +144,14 @@ int floodfill(Imagem *img, int j, int k, Componente *componente)
             componente->roi.c = j;
         if (j > componente->roi.b) //baixo
             componente->roi.b = j;
-        floodfill(img, j, k + 1, componente); // direita
-        floodfill(img, j, k - 1, componente); // esquerda
-        floodfill(img, j + 1, k, componente); // baixo
-        floodfill(img, j - 1, k, componente); // cima
+        if(k+1 < img->largura)
+            floodfill(img, j, k + 1, componente); // direita
+        if(k-1 > 0)
+            floodfill(img, j, k - 1, componente); // esquerda
+        if(j+1 < img->altura)
+            floodfill(img, j + 1, k, componente); // baixo
+        if(k-1 > 0)
+            floodfill(img, j - 1, k, componente); // cima
     }
     return 1;
 }
